@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FST Landing Page Editor</title>
+<style>
+  :root {
+    --navy: #12212f;
+    --blue: #1f40cb;
+    --blue-lt: rgba(31,64,203,0.08);
+    --blue-border: rgba(31,64,203,0.22);
+    --cream: #f0ede8;
+    --gold: #e6a817;
+    --text: #12212f;
+    --muted: #6b7280;
+    --border: rgba(18,33,47,0.11);
+    --bg: #f5f3f0;
+    --white: #ffffff;
+    --red: #dc2626;
+    --green: #15803d;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* TOP BAR */
+  .topbar { height: 52px; background: var(--navy); display: flex; align-items: center; padding: 0 20px; gap: 16px; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .topbar-logo { font-size: 14px; font-weight: 600; color: #f0ede8; letter-spacing: -0.01em; white-space: nowrap; }
+  .topbar-logo span { color: var(--blue); }
+  .topbar-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
+  .topbar-label { font-size: 12px; color: rgba(240,237,232,0.45); white-space: nowrap; }
+  .lp-tabs { display: flex; gap: 3px; }
+  .lp-tab { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; color: rgba(240,237,232,0.55); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid transparent; }
+  .lp-tab:hover { background: rgba(255,255,255,0.07); color: rgba(240,237,232,0.85); }
+  .lp-tab.active { background: rgba(31,64,203,0.25); color: #fff; border-color: rgba(31,64,203,0.4); }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+  .btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #1835b0; }
+  .btn-ghost { background: rgba(255,255,255,0.08); color: rgba(240,237,232,0.75); border: 1px solid rgba(255,255,255,0.12); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  .btn-light { background: var(--white); color: var(--text); border: 1px solid var(--border); }
+  .btn-light:hover { background: var(--bg); }
+  .btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 5px; }
+
+  /* WORKSPACE */
+  .workspace { flex: 1; display: flex; overflow: hidden; }
+
+  /* LEFT EDITOR PANEL */
+  .editor-panel { width: 300px; flex-shrink: 0; background: var(--white); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .editor-panel-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .editor-panel-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .editor-sections { flex: 1; overflow-y: auto; }
+  .editor-section { border-bottom: 1px solid var(--border); }
+  .editor-section-header { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+  .editor-section-header:hover { background: var(--bg); }
+  .editor-section-name { font-size: 13px; font-weight: 500; }
+  .editor-section-toggle { font-size: 9px; color: var(--muted); transition: transform 0.18s; }
+  .editor-section-toggle.open { transform: rotate(90deg); }
+  .editor-section-body { padding: 12px 16px; display: none; background: var(--bg); }
+  .editor-section-body.open { display: block; }
+  .field { margin-bottom: 11px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 4px; }
+  .field input, .field textarea { width: 100%; padding: 6px 9px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; color: var(--text); background: var(--white); font-family: inherit; outline: none; transition: border-color 0.15s; }
+  .field input:focus, .field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(31,64,203,0.1); }
+  .field textarea { resize: vertical; min-height: 56px; line-height: 1.5; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .toggle-label { font-size: 12px; color: var(--text); }
+  .toggle { width: 30px; height: 17px; background: var(--border); border-radius: 9px; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+  .toggle.on { background: var(--blue); }
+  .toggle::after { content: ''; position: absolute; width: 11px; height: 11px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .toggle.on::after { transform: translateX(13px); }
+
+  /* CENTER PREVIEW */
+  .preview-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .browser-chrome { background: #e8e6e2; border-bottom: 1px solid #ccc; padding: 8px 12px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .browser-dots { display: flex; gap: 5px; }
+  .browser-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .browser-url { flex: 1; background: var(--white); border: 1px solid #ccc; border-radius: 5px; padding: 4px 10px; font-size: 11px; color: var(--muted); font-family: monospace; }
+  .browser-body { flex: 1; overflow-y: auto; background: #fff; }
+
+  /* RIGHT NOTES PANEL */
+  .notes-panel { width: 240px; flex-shrink: 0; background: var(--white); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .notes-header { padding: 12px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .notes-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .notes-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+  .strategy-block { margin-bottom: 16px; }
+  .strategy-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 5px; }
+  .strategy-text { font-size: 12px; line-height: 1.65; color: var(--muted); }
+  .check-item { display: flex; gap: 7px; align-items: flex-start; margin-bottom: 7px; font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .check-icon { flex-shrink: 0; color: var(--green); font-size: 11px; margin-top: 1px; }
+  .metric-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .metric-pill { background: var(--blue-lt); border: 1px solid var(--blue-border); color: var(--blue); font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 18px; right: 18px; background: var(--navy); color: #fff; padding: 9px 15px; border-radius: 7px; font-size: 13px; font-weight: 500; z-index: 999; transform: translateY(50px); opacity: 0; transition: all 0.22s; pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--green); }
+
+  /* ═══════════════════════════════════
+     LANDING PAGE STYLES (prefixed .lp-)
+  ═══════════════════════════════════ */
+  .lp-wrap * { box-sizing: border-box; }
+  .lp-nav { display: flex; align-items: center; justify-content: space-between; padding: 13px 36px; }
+  .lp-nav-logo { font-size: 14px; font-weight: 700; }
+  .lp-nav-links { display: flex; gap: 16px; align-items: center; }
+  .lp-nav-cta { padding: 7px 15px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .lp-urgency { text-align: center; padding: 9px 20px; font-size: 12px; font-weight: 600; }
+  .lp-hero { padding: 50px 40px 46px; }
+  .lp-hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  .lp-eyebrow { display: inline-block; padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 600; margin-bottom: 15px; }
+  .lp-h1 { font-size: 32px; font-weight: 700; line-height: 1.12; margin-bottom: 15px; }
+  .lp-sub { font-size: 14px; line-height: 1.68; margin-bottom: 22px; }
+  .lp-cta-btn { display: inline-block; padding: 11px 22px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .lp-ghost-link { font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; margin-left: 12px; }
+  .lp-proof-row { display: flex; gap: 20px; margin-top: 22px; align-items: center; }
+  .lp-stat-num { font-size: 18px; font-weight: 700; }
+  .lp-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 1px; opacity: 0.6; }
+  .lp-stat-div { width: 1px; height: 30px; background: currentColor; opacity: 0.15; }
+  .lp-hero-card { border-radius: 10px; padding: 18px; }
+  .lp-hero-card-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.45; margin-bottom: 11px; }
+  .lp-learn-item { font-size: 12px; display: flex; gap: 7px; margin-bottom: 8px; opacity: 0.85; }
+  .lp-quote-callout { border-left: 2px solid; padding: 9px 11px; border-radius: 0 5px 5px 0; font-size: 11px; font-style: italic; margin-top: 13px; opacity: 0.85; }
+  .lp-logo-strip { display: flex; gap: 16px; align-items: center; padding: 12px 36px; flex-wrap: wrap; }
+  .lp-logo-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.45; }
+  .lp-logo-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.45; }
+  .lp-section { padding: 42px 40px; }
+  .lp-section-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 9px; }
+  .lp-section-h2 { font-size: 22px; font-weight: 700; line-height: 1.2; margin-bottom: 20px; }
+  .lp-section-sub { font-size: 14px; line-height: 1.65; max-width: 520px; margin-bottom: 20px; opacity: 0.7; }
+  .lp-pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .lp-pain-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+  .lp-pain-icon { font-size: 17px; margin-bottom: 9px; }
+  .lp-pain-title { font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+  .lp-pain-body { font-size: 11px; line-height: 1.6; opacity: 0.68; }
+  .lp-testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; }
+  .lp-testi-card { border-radius: 8px; padding: 15px; border: 1px solid; }
+  .lp-stars { font-size: 11px; margin-bottom: 7px; }
+  .lp-testi-quote { font-size: 12px; line-height: 1.6; margin-bottom: 10px; font-style: italic; }
+  .lp-testi-name { font-size: 12px; font-weight: 600; }
+  .lp-testi-role { font-size: 10px; opacity: 0.55; }
+  .lp-cta-section { padding: 50px 40px; text-align: center; }
+  .lp-cta-h2 { font-size: 24px; font-weight: 700; margin-bottom: 9px; }
+  .lp-cta-sub { font-size: 14px; opacity: 0.65; margin-bottom: 24px; }
+  .lp-form-wrap { max-width: 320px; margin: 0 auto; }
+  .lp-form-input { width: 100%; padding: 9px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 8px; display: block; border: 1px solid; }
+  .lp-form-note { font-size: 10px; margin-top: 9px; opacity: 0.4; }
+  .lp-metric-bar { display: flex; border-radius: 8px; overflow: hidden; margin: 18px 0; }
+  .lp-metric-item { flex: 1; padding: 13px 8px; text-align: center; }
+  .lp-metric-val { font-size: 19px; font-weight: 700; }
+  .lp-metric-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.5; margin-top: 3px; }
+  .lp-vs-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .lp-vs-bad { border-radius: 8px 0 0 8px; padding: 14px; }
+  .lp-vs-good { border-radius: 0 8px 8px 0; padding: 14px; }
+  .lp-vs-head { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .lp-vs-item { font-size: 11px; margin-bottom: 7px; display: flex; gap: 5px; opacity: 0.75; }
+  .lp-quote-block { border-left: 3px solid; padding-left: 16px; margin: 14px 0; font-size: 16px; font-weight: 600; line-height: 1.38; }
+  .lp-step-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .lp-step-card { border-radius: 8px; padding: 18px; border: 1px solid; }
+  .lp-step-num { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 9px; }
+  .lp-step-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .lp-step-body { font-size: 11px; line-height: 1.6; opacity: 0.68; }
+  .lp-feature-row { display: flex; gap: 11px; align-items: flex-start; margin-bottom: 15px; }
+  .lp-check-circle { width: 19px; height: 19px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; margin-top: 2px; }
+  .lp-feature-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .lp-feature-body { font-size: 11px; line-height: 1.5; opacity: 0.65; }
+  .lp-form-section { border-radius: 10px; padding: 20px; border: 1px solid; }
+  .lp-form-section-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+  .lp-form-section-sub { font-size: 11px; opacity: 0.5; margin-bottom: 15px; }
+  .lp-select { width: 100%; padding: 8px 11px; border-radius: 6px; font-size: 12px; margin-bottom: 8px; display: block; border: 1px solid; }
+  .lp-outcome-card { border-radius: 7px; padding: 12px; margin-bottom: 8px; border: 1px solid; }
+  .lp-outcome-quote { font-size: 11px; font-style: italic; margin-bottom: 5px; opacity: 0.85; }
+  .lp-outcome-attr { font-size: 10px; opacity: 0.4; }
+  .lp-stat-bar { display: flex; border-radius: 7px; overflow: hidden; border: 1px solid; margin-top: 14px; }
+  .lp-stat-bar-item { flex: 1; padding: 11px 8px; text-align: center; }
+  .lp-hero-light { padding: 50px 36px 0; }
+  .lp-hero-light-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 38px; align-items: end; }
+  .lp-outcome-stack { border-radius: 12px 12px 0 0; padding: 20px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">FST <span>Landing Pages</span></div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-label">Select:</div>
+  <div class="lp-tabs">
+    <div class="lp-tab active" onclick="selectLP(0,this)">LP 01 — Stop Applying</div>
+    <div class="lp-tab" onclick="selectLP(1,this)">LP 02 — Broken System</div>
+    <div class="lp-tab" onclick="selectLP(2,this)">LP 03 — Benchmark Candidate</div>
+    <div class="lp-tab" onclick="selectLP(3,this)">LP 04 — CareerIQ</div>
+    <div class="lp-tab" onclick="selectLP(4,this)">LP 05 — Outplacement Enterprise</div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" onclick="resetLP()">↺ Reset</button>
+    <button class="btn btn-ghost" onclick="toggleDevice()">📱 Mobile</button>
+    <button class="btn btn-primary" onclick="exportHTML()">⬇ Export HTML</button>
+  </div>
+</div>
+
+<div class="workspace">
+
+  <!-- EDITOR -->
+  <div class="editor-panel">
+    <div class="editor-panel-header">
+      <span class="editor-panel-title">Edit Content</span>
+      <button class="btn btn-light btn-sm" onclick="toast('Changes apply live as you type','')">Live editing on</button>
+    </div>
+    <div class="editor-sections" id="editor-sections"></div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-panel">
+    <div class="browser-chrome">
+      <div class="browser-dots">
+        <div class="browser-dot" style="background:#ff5f57"></div>
+        <div class="browser-dot" style="background:#febc2e"></div>
+        <div class="browser-dot" style="background:#28c840"></div>
+      </div>
+      <div class="browser-url" id="browser-url">firstsourceteam.com/workshop</div>
+    </div>
+    <div class="browser-body" id="browser-body">
+      <div class="lp-wrap" id="lp-render"></div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="notes-panel">
+    <div class="notes-header"><div class="notes-title">Strategy Notes</div></div>
+    <div class="notes-body" id="notes-body"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════
+const DEFAULT_DATA = [
+  { // LP01
+    urgency: { show: true, text: '📅 Next live session: Wednesday 11am CT — 28 seats remaining' },
+    nav: { logo: 'FirstSourceTeam', cta: 'Reserve Free Seat →' },
+    hero: {
+      eyebrow: '★ Free live workshop · No pitch · No fluff',
+      h1: 'Stop Applying.\nStart Getting Hired.',
+      sub: 'Most executives over 45 spend 6–18 months grinding applications into a broken system. In 60 minutes, we\'ll show you exactly why — and the methodology that cuts that timeline in half.',
+      cta: 'Reserve My Free Seat →',
+      ghostLink: 'See what past attendees say ↓',
+      learn: ['Why 80% of jobs are never posted publicly', 'Why your ATS score is likely under 40%', 'The Benchmark Candidate framework', 'How to protect your financial runway'],
+      quoteCallout: '"Eye-opening. Wish I\'d found this 6 months ago." — Jesse B., placed at Boeing'
+    },
+    proof: { s1: '5.0★', l1: '174 reviews', s2: '3×', l2: 'faster placement', s3: '19 yrs', l3: 'proven methodology' },
+    logos: ['IBM', 'Google', 'Boeing', 'Siemens', 'Wells Fargo', 'Dept. of Defense'],
+    pain: {
+      kicker: 'The brutal reality',
+      h2: 'The executive job market isn\'t slow right now. It\'s broken by design.',
+      cards: [
+        { icon: '🕳️', title: '80% of jobs are never posted', body: 'You\'re competing for the 20% of "public" jobs — most already filled internally or phantom postings.' },
+        { icon: '🤖', title: 'Your resume scores 35% on ATS', body: 'Tracking systems need 90%+ to pass. Most executives write resumes for humans, not the algorithm.' },
+        { icon: '👻', title: 'LinkedIn makes you invisible', body: 'Without the right optimization you don\'t appear in recruiter searches. You\'re not being overlooked — you\'re not being seen.' }
+      ]
+    },
+    testimonials: [
+      { quote: '"Two days in, I got responses. Hadn\'t heard anything in 4 months of applying. The methodology is real."', name: 'Mike P.', role: 'Director of Operations · Placed at Michelin' },
+      { quote: '"Best advice I\'ve received so far — worked with two other career coaches. Night and day."', name: 'Roger R.', role: 'VP Finance · Google Review verified' },
+      { quote: '"I found my dream job with the DoD. Turned my search around in under 90 days."', name: 'Terry C.', role: 'Senior Manager · Dept. of Defense' }
+    ],
+    cta: { h2: '60 minutes. No pitch. Just the methodology.', sub: 'Join 40+ executives every Wednesday at 11am CT and leave with a concrete plan.', btn: 'Reserve My Free Seat →', note: 'No credit card. No sales call. Unsubscribe anytime.' }
+  },
+  { // LP02
+    nav: { logo: 'FirstSourceTeam', cta: 'Book a Call →' },
+    hero: {
+      eyebrow: 'For executives 45–65 who\'ve been involuntarily displaced',
+      h1: 'You didn\'t lose your job.\nThe system failed you.',
+      sub: 'Age discrimination. Phantom job postings. ATS algorithms that reject 95% of senior resumes before a human reads them. We\'re the only firm built to fight all three.',
+      cta1: 'Talk to a Strategist →', cta2: 'Watch a Client Story'
+    },
+    metrics: ['3×|faster placement', '5.0★|174 reviews', '19 yrs|methodology', '100K+|placed'],
+    logos: ['IBM', 'Google', 'Boeing', 'Wells Fargo', 'Dept. of Defense'],
+    problem: {
+      kicker: 'The problem',
+      h2: 'Every piece of advice you\'ve been given is wrong for where you are right now.',
+      bad: ['Apply to every open role', 'Your experience speaks for itself', 'Network on LinkedIn', 'Wait for recruiters to find you'],
+      good: ['Target the 80% hidden market', 'Build the Benchmark Candidate profile', 'Activate a structured network system', 'Position yourself to be found']
+    },
+    bigQuote: '"The average executive over 50 spends 11 months in search. We cut that to under 90 days for our clients."',
+    testimonials: [
+      { quote: '"Best advice I\'ve received so far. Eye-opening. Had no idea the job market worked this way."', name: 'Roger R.', role: 'VP Finance · Google Review' },
+      { quote: '"Two days in, I got responses. This methodology is completely different from anything else."', name: 'Mike P.', role: 'Operations Director · Placed at Michelin' }
+    ],
+    steps: [
+      { num: 'Step 01', title: 'Rebuild your positioning', body: 'Resume, LinkedIn, and story rebuilt from scratch — ATS-optimized, targeted to each role, written to position you as the benchmark candidate.' },
+      { num: 'Step 02', title: 'Activate the hidden market', body: 'A structured networking system that reaches hiring managers directly — bypassing the 80% of jobs never posted publicly.' },
+      { num: 'Step 03', title: 'Coach until you\'re placed', body: 'Unlimited 1:1 coaching. Interview prep. Offer negotiation. Financial planning. We don\'t stop until you\'re hired at the right level.' }
+    ],
+    financial: { kicker: 'The financial truth', h2: 'Your runway is finite. Every month matters.', sub: 'Every month unemployed at a $250K salary is $20K+ in lost income — before the compounding hit to retirement. We build the career plan and financial plan together.', formTitle: 'Talk to a Strategist', formSub: 'Free 30-minute call. No pressure.', cta: 'Book My Free Call →' }
+  },
+  { // LP04 — CareerIQ
+    nav: { logo: 'CareerIQ', tagline: 'by FirstSourceTeam', cta: 'Start Free →' },
+    hero: {
+      eyebrow: 'AI-powered executive career platform',
+      h1: 'Your career has 20 years\nof proof. The market\njust can\'t see it yet.',
+      sub: 'CareerIQ surfaces your real story. So you stop getting filtered out and start getting in the room. Built specifically for executives 45–65 — not a generic job platform.',
+      cta: 'Start Free — No Credit Card →',
+      ctaNote: 'Free tier forever. Pro at $79/month.',
+      cta2: 'See how it works'
+    },
+    proof: { s1: '5.0★', l1: '174 reviews', s2: '3×', l2: 'faster placement', s3: '33+', l3: 'AI agents' },
+    agents: [
+      { icon: '📄', title: 'Resume Agent', body: 'Rewrites your resume for each specific role in under 30 minutes. ATS-optimized. Uses your words, not generic templates.' },
+      { icon: '🔍', title: 'Job Research Agent', body: 'Finds real jobs — including the 80% never posted publicly. Filters out phantom postings and scams.' },
+      { icon: '🎯', title: 'Benchmark Candidate Agent', body: 'Builds the profile of the ideal candidate for any role and maps you against it — so you know exactly where you stand.' },
+      { icon: '🤝', title: 'Networking Agent', body: 'Identifies the four people to contact at every target company and drafts outreach that actually gets responses.' },
+      { icon: '🎤', title: 'Interview Prep Agent', body: 'Generates the exact questions this company will ask and prepares you to deliver the 3-of-6 framework that advances 8/10 candidates.' },
+      { icon: '💰', title: 'Financial Bridge', body: 'Connects career coaching to financial planning. Your runway is finite. We plan both together.' }
+    ],
+    honest: {
+      kicker: 'Built different',
+      h2: 'Honest metrics. No vanity stats.',
+      items: [
+        { title: 'Momentum Score', body: 'Tracks real activity — applications, networking outreach, interview prep — not just logins.' },
+        { title: 'Applications in the Right Lane', body: 'Tells you how many of your applications are genuinely strong fits. Quality over volume, always.' },
+        { title: 'Agent Work This Week', body: 'See exactly what the AI did for you — no black boxes, no mystery outputs.' }
+      ]
+    },
+    pricing: [
+      { tier: 'Free', price: '$0', desc: 'Start here. No credit card.', features: ['Resume agent (3 runs/month)', 'Job research feed', 'Basic benchmark analysis'] },
+      { tier: 'Pro', price: '$79/mo', desc: 'Full platform access.', features: ['Unlimited agent runs', 'All 33+ agents', 'Interview prep suite', 'Networking agent', '1:1 coaching integration'], highlight: true },
+      { tier: 'Concierge', price: 'Via financial planning', desc: 'Pro included with your financial advisory relationship.', features: ['Everything in Pro', 'Priority coach access', 'Financial planning integration', 'Platform subscription credited'] }
+    ],
+    testimonials: [
+      { quote: '"AI found 14 qualifications on my resume I didn\'t know I had. Changed how I saw myself as a candidate."', name: 'Sarah K.', role: 'VP Operations · Placed at Siemens' },
+      { quote: '"The benchmark candidate framework alone was worth it. I stopped applying to the wrong jobs immediately."', name: 'David H.', role: 'Director of Engineering · Google Review' },
+      { quote: '"Two days in I got responses. The resume agent rewrote my approach completely."', name: 'Mike P.', role: 'Operations Director · Placed at Michelin' }
+    ],
+    cta: { h2: 'Start free. Upgrade when you\'re ready.', sub: 'No credit card. No sales call. Cancel anytime.', btn: 'Start Free →', note: 'Join executives who stopped applying and started getting hired.' }
+  },
+    { // LP05 — Outplacement Enterprise
+    nav: { logo: 'FirstSourceTeam', tagline: 'Enterprise Outplacement', cta: 'Schedule a Demo →' },
+    hero: {
+      eyebrow: 'Enterprise outplacement · AI-powered · Deployed in 48 hours',
+      h1: 'Outplacement your people\nwill actually use.',
+      sub: 'The world\'s largest outplacement firm rates 1.7/5 with participants. We rate 5.0/5. Three tiers. AI platform. Unlimited coaching until placed. Built for the person going through it — not the person signing the invoice.',
+      cta: 'Schedule a Demo →',
+      cta2: 'See program tiers',
+      stat1: '1.7/5', stat1label: 'industry average', stat2: '5.0/5', stat2label: 'FirstSourceTeam', stat3: '3×', stat3label: 'faster placement'
+    },
+    logos: ['IBM', 'Boeing', 'Siemens', 'Wells Fargo', 'Michelin', 'Dept. of Defense'],
+    broken: {
+      kicker: 'The problem with legacy outplacement',
+      h2: 'You\'re paying $5,000–$15,000 per executive for a program nobody logs into.',
+      items: [
+        { icon: '☑️', title: 'Box-checking', body: 'Sold as a line item on a severance package — not as a service anyone expects to work. The buyer never uses the product.' },
+        { icon: '🔀', title: 'Misaligned incentives', body: 'The user never chose the provider. Nobody is accountable for outcomes. The vendor gets paid whether your people land or not.' },
+        { icon: '💸', title: 'Legacy pricing', body: 'Enterprise margins on generic coaching. The same playbook since 2005 at prices that assume nothing has changed.' }
+      ]
+    },
+    difference: {
+      kicker: 'The FirstSourceTeam difference',
+      h2: 'Technology-driven. Coach-backed. Built for the participant.',
+      features: [
+        { title: 'AI platform + unlimited human coaching', body: 'CareerIQ handles the tactical work. Dedicated coaches handle judgment, emotional support, and accountability. Until placed — no time cap.' },
+        { title: 'Coaches matched by industry and level', body: 'Not a rotation of generalists reading from a script. A strategist who knows your executives\' sector, their level, their market.' },
+        { title: 'Deployed in 48 hours', body: 'No six-week implementation. No lengthy onboarding. Your people get access to the full platform and a coach within two business days of separation.' },
+        { title: 'Transparent outcomes', body: 'We report real placement rates, real timelines, real satisfaction scores. Not vanity metrics designed to justify the invoice.' }
+      ]
+    },
+    tiers: [
+      { name: 'Essential', price: 'Contact for pricing', features: ['CareerIQ platform access', 'Group coaching sessions', 'Resume and LinkedIn methodology', 'Job search operations training'] },
+      { name: 'Professional', price: 'Contact for pricing', features: ['Everything in Essential', 'Dedicated 1:1 coach', 'Interview preparation suite', 'Offer negotiation support'], highlight: true },
+      { name: 'Executive', price: 'Contact for pricing', features: ['Everything in Professional', 'Financial planning integration', 'Board-level networking support', 'Executive branding package', 'Concierge placement support'] }
+    ],
+    testimonials: [
+      { quote: '"Our employees consistently said it was the best career support they\'d ever received. The 5.0 rating reflects that."', name: 'CHRO', role: 'Fortune 500 · Manufacturing' },
+      { quote: '"We went from dreading the outplacement conversation to it being a genuine selling point of our severance package."', name: 'VP People', role: 'Technology Company · 2,400 employees' }
+    ],
+    form: { kicker: 'Get started', h2: 'See what outplacement looks like when it actually works.', sub: 'Schedule a 30-minute demo. We\'ll show you the platform, walk through the tiers, and give you placement data from comparable programs.', cta: 'Schedule a Demo →', note: 'No commitment. Deployed in 48 hours when you\'re ready.' }
+  },
+  { // LP03
+    nav: { logo: 'FirstSourceTeam', reviews: '★★★★★ 5.0 · 174 reviews', cta: 'Join Wednesday Workshop →' },
+    hero: {
+      eyebrow: 'Executive career methodology · Since 2005',
+      h1: 'Become the candidate\nthey can\'t ignore.',
+      sub: 'Most executives search for 11 months. Ours place in 90 days. The difference isn\'t luck — it\'s the Benchmark Candidate framework and 19 years of methodology behind it.',
+      features: [
+        { title: 'Dedicated 1:1 coach, matched to your industry', body: 'Not a generalist rotation — a strategist who knows your sector, your level, your market.' },
+        { title: 'AI-powered CareerIQ platform', body: 'The only executive platform built on real coaching methodology — not generic AI prompts.' },
+        { title: 'Coaching until you\'re placed. No cap.', body: 'Unlimited sessions. We don\'t time out. We stay until you\'re hired.' }
+      ],
+      cta1: 'Join Free Live Workshop →', cta2: 'Talk to a Strategist', ctaNote: 'Wednesday 11am CT · Free · No sales pitch'
+    },
+    outcomes: [
+      { quote: '"I found my dream job with the DoD. They turned my search completely around."', attr: 'Terry C. · Senior Manager · Dept. of Defense' },
+      { quote: '"Two days in, I got responses. Hadn\'t heard anything in 4 months."', attr: 'Mike P. · Director of Operations · Placed at Michelin' },
+      { quote: '"Best advice I\'ve received so far. Night and day difference."', attr: 'Roger R. · VP Finance · Google Review ★★★★★' }
+    ],
+    stats: ['100K+|placed', '3×|faster', '5.0★|rated'],
+    logos: ['IBM', 'Google', 'Boeing', 'Siemens', 'Wells Fargo', 'Walgreens'],
+    financial: {
+      kicker: 'The financial dimension', h2: 'Being rehired is necessary. But it\'s not sufficient.',
+      sub: 'Every month at the wrong offer, or the wrong portfolio structure, compounds. We address the career plan and the financial plan simultaneously.',
+      features: [
+        { title: 'Designed Retirement framework', body: 'Floor income, downside protection, and a growth engine — structured for your timeline.' },
+        { title: 'Integrated financial advisory', body: 'FirstSourceWealth — retirement planning, portfolio review, and transition income bridge.' },
+        { title: 'Salary negotiation framework', body: 'Evaluate offers, negotiate compensation, protect your long-term position.' }
+      ],
+      formTitle: 'Join This Wednesday', formSub: 'Free live workshop. 11am CT. No pitch.',
+      cta: 'Reserve My Free Seat →', note: '5.0★ · 174 reviews · No credit card required'
+    }
+  }
+];
+
+let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
+let currentLP = 0;
+let mobileMode = false;
+
+// ════════════════════════════════════════════════════
+// RENDERERS
+// ════════════════════════════════════════════════════
+function r01(d) {
+  const n='#12212f',w='#f0ede8',b='#1f40cb';
+  return `
+<div style="background:${n}">
+  ${d.urgency.show?`<div class="lp-urgency" style="background:#e6a817;color:${n}">${d.urgency.text}</div>`:''}
+  <div class="lp-nav" style="background:${n}">
+    <div class="lp-nav-logo" style="color:${w}">${d.nav.logo}</div>
+    <div class="lp-nav-links"><span style="color:rgba(240,237,232,.55);font-size:12px">5.0★ 174 reviews</span><div class="lp-nav-cta" style="background:${b};color:#fff">${d.nav.cta}</div></div>
+  </div>
+  <div class="lp-hero" style="background:${n}">
+    <div class="lp-hero-grid">
+      <div>
+        <div class="lp-eyebrow" style="background:rgba(31,64,203,.2);border:1px solid rgba(31,64,203,.4);color:#7fa3ff">${d.hero.eyebrow}</div>
+        <div class="lp-h1" style="color:${w}">${d.hero.h1.replace(/\n/g,'<br>')}</div>
+        <div class="lp-sub" style="color:rgba(240,237,232,.72)">${d.hero.sub}</div>
+        <div><div class="lp-cta-btn" style="background:${b};color:#fff">${d.hero.cta}</div><span class="lp-ghost-link" style="color:rgba(240,237,232,.65)">${d.hero.ghostLink}</span></div>
+        <div class="lp-proof-row" style="color:${w}">
+          <div><div class="lp-stat-num">${d.proof.s1}</div><div class="lp-stat-label">${d.proof.l1}</div></div>
+          <div class="lp-stat-div"></div>
+          <div><div class="lp-stat-num">${d.proof.s2}</div><div class="lp-stat-label">${d.proof.l2}</div></div>
+          <div class="lp-stat-div"></div>
+          <div><div class="lp-stat-num">${d.proof.s3}</div><div class="lp-stat-label">${d.proof.l3}</div></div>
+        </div>
+      </div>
+      <div class="lp-hero-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)">
+        <div class="lp-hero-card-label" style="color:${w}">What you'll learn</div>
+        ${d.hero.learn.map(l=>`<div class="lp-learn-item" style="color:${w}"><span style="color:#e6a817;flex-shrink:0">→</span>${l}</div>`).join('')}
+        <div class="lp-quote-callout" style="border-color:#e6a817;background:rgba(255,255,255,.04);color:rgba(240,237,232,.8)">${d.hero.quoteCallout}</div>
+      </div>
+    </div>
+  </div>
+  <div class="lp-logo-strip" style="background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.07)">
+    <span class="lp-logo-label" style="color:rgba(240,237,232,.45)">Our clients landed at</span>
+    ${d.logos.map(l=>`<span class="lp-logo-name" style="color:rgba(240,237,232,.45)">${l}</span>`).join('')}
+  </div>
+</div>
+<div class="lp-section" style="background:#fff">
+  <div class="lp-section-kicker" style="color:${b}">${d.pain.kicker}</div>
+  <div class="lp-section-h2" style="color:${n}">${d.pain.h2}</div>
+  <div class="lp-pain-grid">
+    ${d.pain.cards.map(c=>`<div class="lp-pain-card" style="background:#f5f3f0;border-color:rgba(18,33,47,.1)"><div class="lp-pain-icon">${c.icon}</div><div class="lp-pain-title" style="color:${n}">${c.title}</div><div class="lp-pain-body" style="color:${n}">${c.body}</div></div>`).join('')}
+  </div>
+  <div style="text-align:center;margin-top:20px"><div class="lp-cta-btn" style="background:${b};color:#fff">${d.hero.cta}</div></div>
+</div>
+<div class="lp-section" style="background:#f5f3f0">
+  <div class="lp-section-kicker" style="color:${b}">Social proof</div>
+  <div class="lp-section-h2" style="color:${n}">From people who showed up exactly where you are now.</div>
+  <div class="lp-testi-grid">
+    ${d.testimonials.map(t=>`<div class="lp-testi-card" style="background:#fff;border-color:rgba(18,33,47,.1)"><div class="lp-stars" style="color:#f5a623">★★★★★</div><div class="lp-testi-quote" style="color:${n}">${t.quote}</div><div class="lp-testi-name" style="color:${n}">${t.name}</div><div class="lp-testi-role" style="color:${n}">${t.role}</div></div>`).join('')}
+  </div>
+</div>
+<div class="lp-cta-section" style="background:${n};color:${w}">
+  <div class="lp-cta-h2">${d.cta.h2}</div>
+  <div class="lp-cta-sub">${d.cta.sub}</div>
+  <div class="lp-form-wrap">
+    <input class="lp-form-input" placeholder="First name" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);color:${w}">
+    <input class="lp-form-input" placeholder="Work email" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);color:${w}">
+    <div class="lp-cta-btn" style="background:${b};color:#fff;width:100%;text-align:center;padding:11px">${d.cta.btn}</div>
+    <div class="lp-form-note" style="color:rgba(240,237,232,.35)">${d.cta.note}</div>
+  </div>
+</div>`;
+}
+
+function r02(d) {
+  const n='#12212f',w='#f0ede8',b='#1f40cb';
+  const metrics = d.metrics.map(m=>{const[v,l]=m.split('|');return`<div class="lp-metric-item" style="border-right:1px solid rgba(255,255,255,.08)"><div class="lp-metric-val" style="color:${w}">${v}</div><div class="lp-metric-lbl" style="color:rgba(240,237,232,.45)">${l}</div></div>`;}).join('');
+  return `
+<div style="background:${n}">
+  <div class="lp-nav" style="background:${n}">
+    <div class="lp-nav-logo" style="color:${w}">${d.nav.logo}</div>
+    <div class="lp-nav-cta" style="background:${b};color:#fff">${d.nav.cta}</div>
+  </div>
+  <div class="lp-hero" style="background:${n};text-align:center;padding-bottom:0">
+    <div style="max-width:580px;margin:0 auto;padding-bottom:34px">
+      <div class="lp-eyebrow" style="background:rgba(31,64,203,.2);border:1px solid rgba(31,64,203,.4);color:#7fa3ff">${d.hero.eyebrow}</div>
+      <div class="lp-h1" style="color:${w};font-size:28px">${d.hero.h1.replace(/\n/g,'<br>')}</div>
+      <div class="lp-sub" style="color:rgba(240,237,232,.72);max-width:460px;margin:0 auto 20px">${d.hero.sub}</div>
+      <div style="display:flex;gap:9px;justify-content:center">
+        <div class="lp-cta-btn" style="background:${b};color:#fff">${d.hero.cta1}</div>
+        <div class="lp-cta-btn" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:${w}">${d.hero.cta2}</div>
+      </div>
+      <div class="lp-metric-bar" style="border:1px solid rgba(255,255,255,.1)">${metrics}</div>
+    </div>
+  </div>
+  <div class="lp-logo-strip" style="background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.07)">
+    <span class="lp-logo-label" style="color:rgba(240,237,232,.45)">Clients placed at</span>
+    ${d.logos.map(l=>`<span class="lp-logo-name" style="color:rgba(240,237,232,.45)">${l}</span>`).join('')}
+  </div>
+</div>
+<div class="lp-section" style="background:#fff">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+    <div>
+      <div class="lp-section-kicker" style="color:${b}">${d.problem.kicker}</div>
+      <div class="lp-section-h2" style="color:${n};font-size:18px">${d.problem.h2}</div>
+      <div class="lp-vs-grid" style="margin-top:16px">
+        <div class="lp-vs-bad" style="background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.12)">
+          <div class="lp-vs-head" style="color:#c0392b">What they tell you</div>
+          ${d.problem.bad.map(i=>`<div class="lp-vs-item"><span>✗</span>${i}</div>`).join('')}
+        </div>
+        <div class="lp-vs-good" style="background:rgba(31,64,203,.05);border:1px solid rgba(31,64,203,.12);border-left:none">
+          <div class="lp-vs-head" style="color:${b}">What actually works</div>
+          ${d.problem.good.map(i=>`<div class="lp-vs-item"><span style="color:${b}">✓</span>${i}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="lp-quote-block" style="border-color:${b};color:${n}">${d.bigQuote}</div>
+      ${d.testimonials.map(t=>`<div class="lp-testi-card" style="background:#f5f3f0;border-color:rgba(18,33,47,.1);margin-bottom:9px"><div class="lp-stars" style="color:#f5a623">★★★★★</div><div class="lp-testi-quote" style="color:${n}">${t.quote}</div><div class="lp-testi-name" style="color:${n}">${t.name}</div><div class="lp-testi-role" style="color:${n}">${t.role}</div></div>`).join('')}
+    </div>
+  </div>
+</div>
+<div class="lp-section" style="background:#f5f3f0">
+  <div class="lp-section-kicker" style="color:${b}">The methodology</div>
+  <div class="lp-section-h2" style="color:${n}">A system built for the market that actually exists.</div>
+  <div class="lp-step-grid">
+    ${d.steps.map(s=>`<div class="lp-step-card" style="background:#fff;border-color:rgba(18,33,47,.1)"><div class="lp-step-num" style="color:${b}">${s.num}</div><div class="lp-step-title" style="color:${n}">${s.title}</div><div class="lp-step-body">${s.body}</div></div>`).join('')}
+  </div>
+  <div style="text-align:center;margin-top:18px"><div class="lp-cta-btn" style="background:${b};color:#fff">${d.financial.cta}</div></div>
+</div>
+<div class="lp-section" style="background:${n}">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center">
+    <div>
+      <div class="lp-section-kicker" style="color:rgba(240,237,232,.4)">${d.financial.kicker}</div>
+      <div class="lp-h1" style="color:${w};font-size:20px;margin-bottom:11px">${d.financial.h2}</div>
+      <div class="lp-sub" style="color:rgba(240,237,232,.7);font-size:13px">${d.financial.sub}</div>
+    </div>
+    <div class="lp-form-section" style="background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12)">
+      <div class="lp-form-section-title" style="color:${w}">${d.financial.formTitle}</div>
+      <div class="lp-form-section-sub">${d.financial.formSub}</div>
+      <input class="lp-form-input" placeholder="Full name" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);color:${w}">
+      <input class="lp-form-input" placeholder="your@email.com" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);color:${w}">
+      <select class="lp-select" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);color:${w}"><option>Recently displaced</option><option>Actively searching (3+ months)</option><option>Considering a move</option></select>
+      <div class="lp-cta-btn" style="background:${b};color:#fff;width:100%;text-align:center;padding:10px">${d.financial.cta}</div>
+      <div style="font-size:10px;color:rgba(240,237,232,.3);text-align:center;margin-top:8px">19 years. 100,000+ placed. 5.0 stars.</div>
+    </div>
+  </div>
+</div>`;
+}
+
+function r03(d) {
+  const n='#12212f',w='#f0ede8',b='#1f40cb',cr='#f0ede8';
+  const statBar = d.stats.map(s=>{const[v,l]=s.split('|');return`<div class="lp-stat-bar-item"><div style="font-size:16px;font-weight:700;color:${w}">${v}</div><div style="font-size:9px;color:rgba(240,237,232,.4);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">${l}</div></div>`;}).join('');
+  return `
+<div style="background:${cr};border-bottom:1px solid rgba(18,33,47,.1)">
+  <div class="lp-nav" style="background:${cr}">
+    <div class="lp-nav-logo" style="color:${n}">${d.nav.logo}</div>
+    <div class="lp-nav-links"><span style="font-size:12px;color:#6b7280">${d.nav.reviews}</span><div class="lp-nav-cta" style="background:${b};color:#fff">${d.nav.cta}</div></div>
+  </div>
+</div>
+<div class="lp-hero-light" style="background:${cr}">
+  <div class="lp-hero-light-grid">
+    <div>
+      <div class="lp-eyebrow" style="background:rgba(31,64,203,.1);border:1px solid rgba(31,64,203,.2);color:${b};font-size:10px">${d.hero.eyebrow}</div>
+      <div class="lp-h1" style="color:${n}">${d.hero.h1.replace(/\n/g,'<br>')}</div>
+      <div class="lp-sub" style="color:rgba(18,33,47,.65)">${d.hero.sub}</div>
+      ${d.hero.features.map(f=>`<div class="lp-feature-row"><div class="lp-check-circle" style="background:rgba(31,64,203,.1);border:1px solid rgba(31,64,203,.25);color:${b}">✓</div><div><div class="lp-feature-title" style="color:${n}">${f.title}</div><div class="lp-feature-body">${f.body}</div></div></div>`).join('')}
+      <div style="margin-top:18px;display:flex;gap:9px;flex-wrap:wrap">
+        <div class="lp-cta-btn" style="background:${b};color:#fff">${d.hero.cta1}</div>
+        <div class="lp-cta-btn" style="background:transparent;border:1px solid rgba(18,33,47,.25);color:${n}">${d.hero.cta2}</div>
+      </div>
+      <div style="font-size:11px;color:rgba(18,33,47,.4);margin-top:9px">${d.hero.ctaNote}</div>
+    </div>
+    <div class="lp-outcome-stack" style="background:${n}">
+      <div style="font-size:10px;color:rgba(240,237,232,.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:11px">Client outcomes</div>
+      ${d.outcomes.map(o=>`<div class="lp-outcome-card" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)"><div class="lp-outcome-quote">${o.quote}</div><div class="lp-outcome-attr">${o.attr}</div></div>`).join('')}
+      <div class="lp-stat-bar" style="border-color:rgba(255,255,255,.08)">${statBar}</div>
+    </div>
+  </div>
+</div>
+<div class="lp-logo-strip" style="background:${cr};border-top:1px solid rgba(18,33,47,.08)">
+  <span class="lp-logo-label" style="color:${n}">Clients landed at</span>
+  ${d.logos.map(l=>`<span class="lp-logo-name" style="color:${n}">${l}</span>`).join('')}
+</div>
+<div class="lp-section" style="background:#fff">
+  <div style="display:grid;grid-template-columns:3fr 2fr;gap:36px;align-items:start">
+    <div>
+      <div class="lp-section-kicker" style="color:${b}">${d.financial.kicker}</div>
+      <div class="lp-section-h2" style="color:${n};font-size:19px">${d.financial.h2}</div>
+      <div class="lp-section-sub">${d.financial.sub}</div>
+      ${d.financial.features.map(f=>`<div class="lp-feature-row"><div class="lp-check-circle" style="background:rgba(31,64,203,.1);border:1px solid rgba(31,64,203,.25);color:${b}">✓</div><div><div class="lp-feature-title" style="color:${n}">${f.title}</div><div class="lp-feature-body">${f.body}</div></div></div>`).join('')}
+    </div>
+    <div style="background:#f5f3f0;border:1px solid rgba(18,33,47,.1);border-radius:10px;padding:20px">
+      <div class="lp-form-section-title" style="color:${n}">${d.financial.formTitle}</div>
+      <div class="lp-form-section-sub" style="color:#6b7280">${d.financial.formSub}</div>
+      <div style="display:flex;gap:7px;align-items:center;margin-bottom:8px;font-size:12px;color:#6b7280"><span>📅</span>Every Wednesday, 11:00am–12:00pm CT</div>
+      <div style="display:flex;gap:7px;align-items:center;margin-bottom:8px;font-size:12px;color:#6b7280"><span>👥</span>Live Q&amp;A with a senior strategist</div>
+      <div style="display:flex;gap:7px;align-items:center;margin-bottom:14px;font-size:12px;color:#6b7280"><span>🎯</span>See the full methodology in action</div>
+      <input class="lp-form-input" placeholder="Your name" style="background:#fff;border-color:rgba(18,33,47,.15);color:${n}">
+      <input class="lp-form-input" placeholder="your@email.com" style="background:#fff;border-color:rgba(18,33,47,.15);color:${n}">
+      <div class="lp-cta-btn" style="background:${b};color:#fff;width:100%;text-align:center;padding:10px">${d.financial.cta}</div>
+      <div style="font-size:10px;color:#9ca3af;text-align:center;margin-top:7px">${d.financial.note}</div>
+    </div>
+  </div>
+</div>`;
+}
+
+function r04(d) {
+  const n='#0f1923',w='#ffffff',b='#1f40cb',cr='#f0ede8',lt='#f8f7f5';
+  return `
+<div style="background:${w};border-bottom:1px solid rgba(18,33,47,.1)">
+  <div class="lp-nav" style="background:${w}">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="lp-nav-logo" style="color:${n}">${d.nav.logo}</div>
+      <span style="font-size:11px;color:#9ca3af">${d.nav.tagline}</span>
+    </div>
+    <div class="lp-nav-links">
+      <span style="font-size:12px;color:#6b7280">5.0★ 174 reviews</span>
+      <div class="lp-nav-cta" style="background:${b};color:#fff">${d.nav.cta}</div>
+    </div>
+  </div>
+</div>
+<div style="background:${n};padding:50px 40px 46px">
+  <div style="max-width:620px;margin:0 auto;text-align:center">
+    <div class="lp-eyebrow" style="background:rgba(31,64,203,.2);border:1px solid rgba(31,64,203,.4);color:#7fa3ff">${d.hero.eyebrow}</div>
+    <div class="lp-h1" style="color:#f0ede8;font-size:34px">${d.hero.h1.replace(/\n/g,'<br>')}</div>
+    <div class="lp-sub" style="color:rgba(240,237,232,.7);max-width:480px;margin:0 auto 22px">${d.hero.sub}</div>
+    <div style="display:flex;gap:9px;justify-content:center;flex-wrap:wrap">
+      <div class="lp-cta-btn" style="background:${b};color:#fff">${d.hero.cta}</div>
+      <div class="lp-cta-btn" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#f0ede8">${d.hero.cta2}</div>
+    </div>
+    <div style="font-size:11px;color:rgba(240,237,232,.35);margin-top:10px">${d.hero.ctaNote}</div>
+    <div class="lp-proof-row" style="color:#f0ede8;justify-content:center;margin-top:24px">
+      <div><div class="lp-stat-num">${d.proof.s1}</div><div class="lp-stat-label">${d.proof.l1}</div></div>
+      <div class="lp-stat-div"></div>
+      <div><div class="lp-stat-num">${d.proof.s2}</div><div class="lp-stat-label">${d.proof.l2}</div></div>
+      <div class="lp-stat-div"></div>
+      <div><div class="lp-stat-num">${d.proof.s3}</div><div class="lp-stat-label">${d.proof.l3}</div></div>
+    </div>
+  </div>
+</div>
+<div style="background:${lt};padding:42px 40px">
+  <div style="text-align:center;margin-bottom:28px">
+    <div class="lp-section-kicker" style="color:${b}">What CareerIQ does</div>
+    <div class="lp-section-h2" style="color:${n}">33+ AI agents. One platform. Built on 19 years of coaching methodology.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+    ${d.agents.map(a=>`<div style="background:#fff;border:1px solid rgba(18,33,47,.1);border-radius:9px;padding:18px"><div style="font-size:20px;margin-bottom:9px">${a.icon}</div><div style="font-size:13px;font-weight:600;color:${n};margin-bottom:5px">${a.title}</div><div style="font-size:11px;line-height:1.6;color:#6b7280">${a.body}</div></div>`).join('')}
+  </div>
+</div>
+<div style="background:#fff;padding:42px 40px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center">
+    <div>
+      <div class="lp-section-kicker" style="color:${b}">${d.honest.kicker}</div>
+      <div class="lp-section-h2" style="color:${n}">${d.honest.h2}</div>
+      ${d.honest.items.map(i=>`<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:600;color:${n};margin-bottom:3px">${i.title}</div><div style="font-size:12px;color:#6b7280;line-height:1.6">${i.body}</div></div>`).join('')}
+    </div>
+    <div style="background:${n};border-radius:12px;padding:22px">
+      <div style="font-size:10px;color:rgba(240,237,232,.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Your dashboard this week</div>
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:14px;margin-bottom:10px">
+        <div style="font-size:10px;color:rgba(240,237,232,.4);text-transform:uppercase;letter-spacing:.06em">Momentum Score</div>
+        <div style="font-size:28px;font-weight:700;color:#f0ede8;margin:3px 0">84</div>
+        <div style="font-size:11px;color:rgba(240,237,232,.5)">Up 12 pts this week · Strong execution</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px">
+          <div style="font-size:10px;color:rgba(240,237,232,.4);text-transform:uppercase;letter-spacing:.06em">Right lane apps</div>
+          <div style="font-size:22px;font-weight:700;color:#f0ede8">7/8</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px">
+          <div style="font-size:10px;color:rgba(240,237,232,.4);text-transform:uppercase;letter-spacing:.06em">Agent runs</div>
+          <div style="font-size:22px;font-weight:700;color:#f0ede8">23</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div style="background:${lt};padding:42px 40px">
+  <div style="text-align:center;margin-bottom:28px">
+    <div class="lp-section-kicker" style="color:${b}">Pricing</div>
+    <div class="lp-section-h2" style="color:${n}">Start free. Scale when ready.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:780px;margin:0 auto">
+    ${d.pricing.map(p=>`<div style="background:${p.highlight?n:'#fff'};border:${p.highlight?'2px solid '+b:'1px solid rgba(18,33,47,.1)'};border-radius:10px;padding:20px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${p.highlight?'rgba(240,237,232,.5)':'#9ca3af'};margin-bottom:6px">${p.tier}</div><div style="font-size:20px;font-weight:700;color:${p.highlight?'#f0ede8':n};margin-bottom:3px">${p.price}</div><div style="font-size:11px;color:${p.highlight?'rgba(240,237,232,.5)':'#9ca3af'};margin-bottom:14px">${p.desc}</div>${p.features.map(f=>`<div style="font-size:11px;color:${p.highlight?'rgba(240,237,232,.8)':'#374151'};margin-bottom:7px;display:flex;gap:6px"><span style="color:${b};flex-shrink:0">✓</span>${f}</div>`).join('')}</div>`).join('')}
+  </div>
+</div>
+<div style="background:#fff;padding:42px 40px">
+  <div class="lp-section-kicker" style="color:${b}">Social proof</div>
+  <div class="lp-section-h2" style="color:${n}">Executives who stopped applying and started getting hired.</div>
+  <div class="lp-testi-grid">
+    ${d.testimonials.map(t=>`<div class="lp-testi-card" style="background:${lt};border-color:rgba(18,33,47,.1)"><div class="lp-stars" style="color:#f5a623">★★★★★</div><div class="lp-testi-quote" style="color:${n}">${t.quote}</div><div class="lp-testi-name" style="color:${n}">${t.name}</div><div class="lp-testi-role" style="color:${n}">${t.role}</div></div>`).join('')}
+  </div>
+</div>
+<div style="background:${n};padding:50px 40px;text-align:center">
+  <div class="lp-cta-h2" style="color:#f0ede8">${d.cta.h2}</div>
+  <div style="font-size:14px;color:rgba(240,237,232,.55);margin-bottom:22px">${d.cta.sub}</div>
+  <div style="max-width:300px;margin:0 auto">
+    <input class="lp-form-input" placeholder="Your email" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);color:#f0ede8;margin-bottom:8px">
+    <div class="lp-cta-btn" style="background:${b};color:#fff;width:100%;text-align:center;padding:11px">${d.cta.btn}</div>
+    <div style="font-size:10px;color:rgba(240,237,232,.3);margin-top:9px">${d.cta.note}</div>
+  </div>
+</div>`;
+}
+
+function r05(d) {
+  const n='#12212f',w='#ffffff',b='#1f40cb',cr='#f0ede8',lt='#f5f3f0';
+  return `
+<div style="background:${w};border-bottom:1px solid rgba(18,33,47,.1)">
+  <div class="lp-nav" style="background:${w}">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="lp-nav-logo" style="color:${n}">${d.nav.logo}</div>
+      <span style="font-size:11px;background:rgba(31,64,203,.1);border:1px solid rgba(31,64,203,.2);color:${b};padding:2px 8px;border-radius:4px;font-weight:600">${d.nav.tagline}</span>
+    </div>
+    <div class="lp-nav-cta" style="background:${b};color:#fff">${d.nav.cta}</div>
+  </div>
+</div>
+<div style="background:${n};padding:50px 40px 46px">
+  <div style="max-width:640px">
+    <div class="lp-eyebrow" style="background:rgba(31,64,203,.2);border:1px solid rgba(31,64,203,.4);color:#7fa3ff">${d.hero.eyebrow}</div>
+    <div class="lp-h1" style="color:${cr};font-size:32px">${d.hero.h1.replace(/\n/g,'<br>')}</div>
+    <div class="lp-sub" style="color:rgba(240,237,232,.7)">${d.hero.sub}</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:28px">
+      <div class="lp-cta-btn" style="background:${b};color:#fff">${d.hero.cta}</div>
+      <div class="lp-cta-btn" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:${cr}">${d.hero.cta2}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.1);border-radius:8px;overflow:hidden">
+      <div style="background:rgba(220,38,38,.15);padding:14px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:#fca5a5">${d.hero.stat1}</div>
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:rgba(252,165,165,.6);margin-top:3px">${d.hero.stat1label}</div>
+      </div>
+      <div style="background:rgba(31,64,203,.2);padding:14px;text-align:center;border-left:1px solid rgba(255,255,255,.1);border-right:1px solid rgba(255,255,255,.1)">
+        <div style="font-size:22px;font-weight:700;color:#7fa3ff">${d.hero.stat2}</div>
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:rgba(127,163,255,.6);margin-top:3px">${d.hero.stat2label}</div>
+      </div>
+      <div style="background:rgba(21,128,61,.15);padding:14px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:#86efac">${d.hero.stat3}</div>
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:rgba(134,239,172,.6);margin-top:3px">${d.hero.stat3label}</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="lp-logo-strip" style="background:${n};border-top:1px solid rgba(255,255,255,.07)">
+  <span class="lp-logo-label" style="color:rgba(240,237,232,.4)">Participant employers include</span>
+  ${d.logos.map(l=>`<span class="lp-logo-name" style="color:rgba(240,237,232,.4)">${l}</span>`).join('')}
+</div>
+<div style="background:${lt};padding:42px 40px">
+  <div class="lp-section-kicker" style="color:#dc2626">${d.broken.kicker}</div>
+  <div class="lp-section-h2" style="color:${n}">${d.broken.h2}</div>
+  <div class="lp-pain-grid">
+    ${d.broken.items.map(i=>`<div class="lp-pain-card" style="background:#fff;border-color:rgba(220,38,38,.15)"><div class="lp-pain-icon">${i.icon}</div><div class="lp-pain-title" style="color:${n}">${i.title}</div><div class="lp-pain-body">${i.body}</div></div>`).join('')}
+  </div>
+</div>
+<div style="background:#fff;padding:42px 40px">
+  <div class="lp-section-kicker" style="color:${b}">${d.difference.kicker}</div>
+  <div class="lp-section-h2" style="color:${n}">${d.difference.h2}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    ${d.difference.features.map(f=>`<div class="lp-feature-row"><div class="lp-check-circle" style="background:rgba(31,64,203,.1);border:1px solid rgba(31,64,203,.25);color:${b}">✓</div><div><div class="lp-feature-title" style="color:${n}">${f.title}</div><div class="lp-feature-body">${f.body}</div></div></div>`).join('')}
+  </div>
+  <div style="text-align:center;margin-top:24px"><div class="lp-cta-btn" style="background:${b};color:#fff">${d.form.cta}</div></div>
+</div>
+<div style="background:${lt};padding:42px 40px">
+  <div style="text-align:center;margin-bottom:28px">
+    <div class="lp-section-kicker" style="color:${b}">Program tiers</div>
+    <div class="lp-section-h2" style="color:${n}">Three tiers. AI platform. Deployed in 48 hours.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:780px;margin:0 auto">
+    ${d.tiers.map(t=>`<div style="background:${t.highlight?n:'#fff'};border:${t.highlight?'2px solid '+b:'1px solid rgba(18,33,47,.1)'};border-radius:10px;padding:20px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${t.highlight?'rgba(240,237,232,.5)':'#9ca3af'};margin-bottom:6px">${t.name}</div><div style="font-size:16px;font-weight:700;color:${t.highlight?'#f0ede8':n};margin-bottom:10px">${t.price}</div>${t.features.map(f=>`<div style="font-size:11px;color:${t.highlight?'rgba(240,237,232,.8)':'#374151'};margin-bottom:7px;display:flex;gap:6px"><span style="color:${b};flex-shrink:0">✓</span>${f}</div>`).join('')}</div>`).join('')}
+  </div>
+</div>
+<div style="background:#fff;padding:42px 40px">
+  <div class="lp-section-kicker" style="color:${b}">What CHROs say</div>
+  <div class="lp-section-h2" style="color:${n}">When outplacement actually works, everyone wins.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    ${d.testimonials.map(t=>`<div class="lp-testi-card" style="background:${lt};border-color:rgba(18,33,47,.1)"><div class="lp-stars" style="color:#f5a623">★★★★★</div><div class="lp-testi-quote" style="color:${n}">${t.quote}</div><div class="lp-testi-name" style="color:${n}">${t.name}</div><div class="lp-testi-role" style="color:${n}">${t.role}</div></div>`).join('')}
+  </div>
+</div>
+<div style="background:${n};padding:50px 40px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center">
+    <div>
+      <div class="lp-section-kicker" style="color:rgba(240,237,232,.4)">${d.form.kicker}</div>
+      <div class="lp-h1" style="color:${cr};font-size:22px;margin-bottom:11px">${d.form.h2}</div>
+      <div style="font-size:13px;color:rgba(240,237,232,.6);line-height:1.7">${d.form.sub}</div>
+    </div>
+    <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:22px">
+      <div style="font-size:14px;font-weight:700;color:${cr};margin-bottom:4px">Schedule a Demo</div>
+      <div style="font-size:11px;color:rgba(240,237,232,.4);margin-bottom:16px">30 minutes. No commitment.</div>
+      <input class="lp-form-input" placeholder="Your name" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);color:${cr}">
+      <input class="lp-form-input" placeholder="Work email" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);color:${cr}">
+      <input class="lp-form-input" placeholder="Company name" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);color:${cr}">
+      <select class="lp-select" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);color:${cr}">
+        <option>Headcount reduction in progress</option>
+        <option>Planning a reduction in force</option>
+        <option>Reviewing outplacement vendors</option>
+        <option>Evaluating for future needs</option>
+      </select>
+      <div class="lp-cta-btn" style="background:${b};color:#fff;width:100%;text-align:center;padding:11px">${d.form.cta}</div>
+      <div style="font-size:10px;color:rgba(240,237,232,.25);text-align:center;margin-top:8px">${d.form.note}</div>
+    </div>
+  </div>
+</div>`;
+}
+
+
+function renderCurrent() {
+  const fns = [r01, r02, r03, r04, r05];
+  document.getElementById('lp-render').innerHTML = fns[currentLP](DATA[currentLP]);
+}
+
+// ════════════════════════════════════════════════════
+// EDITOR BUILDER
+// ════════════════════════════════════════════════════
+function sec(title, bodyHTML) {
+  return `<div class="editor-section">
+    <div class="editor-section-header" onclick="toggleSec(this)">
+      <span class="editor-section-name">${title}</span>
+      <span class="editor-section-toggle">▶</span>
+    </div>
+    <div class="editor-section-body">${bodyHTML}</div>
+  </div>`;
+}
+function f(label, path, value, ta=false) {
+  const v = (value||'').toString();
+  if (ta) return `<div class="field"><label>${label}</label><textarea data-path="${path}" oninput="liveEdit(this)">${v.replace(/</g,'&lt;')}</textarea></div>`;
+  return `<div class="field"><label>${label}</label><input type="text" data-path="${path}" value="${v.replace(/"/g,'&quot;')}" oninput="liveEdit(this)"></div>`;
+}
+function tog(label, path, val) {
+  return `<div class="toggle-row"><span class="toggle-label">${label}</span><div class="toggle ${val?'on':''}" onclick="toggleEdit(this,'${path}')"></div></div>`;
+}
+
+function buildEditor01(d) {
+  return [
+    sec('Urgency Bar', tog('Show bar','urgency.show',d.urgency.show)+f('Text','urgency.text',d.urgency.text,true)),
+    sec('Navigation', f('Logo','nav.logo',d.nav.logo)+f('CTA button','nav.cta',d.nav.cta)),
+    sec('Hero', f('Eyebrow','hero.eyebrow',d.hero.eyebrow)+f('Headline','hero.h1',d.hero.h1,true)+f('Subheadline','hero.sub',d.hero.sub,true)+f('CTA button','hero.cta',d.hero.cta)+f('Ghost link','hero.ghostLink',d.hero.ghostLink)+f('Learn 1','hero.learn.0',d.hero.learn[0])+f('Learn 2','hero.learn.1',d.hero.learn[1])+f('Learn 3','hero.learn.2',d.hero.learn[2])+f('Learn 4','hero.learn.3',d.hero.learn[3])+f('Quote callout','hero.quoteCallout',d.hero.quoteCallout,true)),
+    sec('Proof Stats', f('Stat 1','proof.s1',d.proof.s1)+f('Label 1','proof.l1',d.proof.l1)+f('Stat 2','proof.s2',d.proof.s2)+f('Label 2','proof.l2',d.proof.l2)+f('Stat 3','proof.s3',d.proof.s3)+f('Label 3','proof.l3',d.proof.l3)),
+    sec('Pain Section', f('Kicker','pain.kicker',d.pain.kicker)+f('Headline','pain.h2',d.pain.h2,true)+f('Card 1 title','pain.cards.0.title',d.pain.cards[0].title)+f('Card 1 body','pain.cards.0.body',d.pain.cards[0].body,true)+f('Card 2 title','pain.cards.1.title',d.pain.cards[1].title)+f('Card 2 body','pain.cards.1.body',d.pain.cards[1].body,true)+f('Card 3 title','pain.cards.2.title',d.pain.cards[2].title)+f('Card 3 body','pain.cards.2.body',d.pain.cards[2].body,true)),
+    sec('Testimonials', f('Quote 1','testimonials.0.quote',d.testimonials[0].quote,true)+f('Name 1','testimonials.0.name',d.testimonials[0].name)+f('Role 1','testimonials.0.role',d.testimonials[0].role)+f('Quote 2','testimonials.1.quote',d.testimonials[1].quote,true)+f('Name 2','testimonials.1.name',d.testimonials[1].name)+f('Role 2','testimonials.1.role',d.testimonials[1].role)+f('Quote 3','testimonials.2.quote',d.testimonials[2].quote,true)+f('Name 3','testimonials.2.name',d.testimonials[2].name)+f('Role 3','testimonials.2.role',d.testimonials[2].role)),
+    sec('Bottom CTA', f('Headline','cta.h2',d.cta.h2,true)+f('Subheadline','cta.sub',d.cta.sub)+f('Button','cta.btn',d.cta.btn)+f('Fine print','cta.note',d.cta.note))
+  ].join('');
+}
+
+function buildEditor02(d) {
+  return [
+    sec('Navigation', f('Logo','nav.logo',d.nav.logo)+f('CTA button','nav.cta',d.nav.cta)),
+    sec('Hero', f('Eyebrow','hero.eyebrow',d.hero.eyebrow)+f('Headline','hero.h1',d.hero.h1,true)+f('Subheadline','hero.sub',d.hero.sub,true)+f('CTA 1','hero.cta1',d.hero.cta1)+f('CTA 2','hero.cta2',d.hero.cta2)),
+    sec('Big Quote', f('Quote','bigQuote',d.bigQuote,true)),
+    sec('Problem Section', f('Kicker','problem.kicker',d.problem.kicker)+f('Headline','problem.h2',d.problem.h2,true)+f('Bad 1','problem.bad.0',d.problem.bad[0])+f('Bad 2','problem.bad.1',d.problem.bad[1])+f('Bad 3','problem.bad.2',d.problem.bad[2])+f('Bad 4','problem.bad.3',d.problem.bad[3])+f('Good 1','problem.good.0',d.problem.good[0])+f('Good 2','problem.good.1',d.problem.good[1])+f('Good 3','problem.good.2',d.problem.good[2])+f('Good 4','problem.good.3',d.problem.good[3])),
+    sec('Testimonials', f('Quote 1','testimonials.0.quote',d.testimonials[0].quote,true)+f('Name 1','testimonials.0.name',d.testimonials[0].name)+f('Role 1','testimonials.0.role',d.testimonials[0].role)+f('Quote 2','testimonials.1.quote',d.testimonials[1].quote,true)+f('Name 2','testimonials.1.name',d.testimonials[1].name)+f('Role 2','testimonials.1.role',d.testimonials[1].role)),
+    sec('Methodology Steps', f('Step 1 title','steps.0.title',d.steps[0].title)+f('Step 1 body','steps.0.body',d.steps[0].body,true)+f('Step 2 title','steps.1.title',d.steps[1].title)+f('Step 2 body','steps.1.body',d.steps[1].body,true)+f('Step 3 title','steps.2.title',d.steps[2].title)+f('Step 3 body','steps.2.body',d.steps[2].body,true)),
+    sec('Financial / Form', f('Kicker','financial.kicker',d.financial.kicker)+f('Headline','financial.h2',d.financial.h2,true)+f('Subheadline','financial.sub',d.financial.sub,true)+f('Form title','financial.formTitle',d.financial.formTitle)+f('Form subtitle','financial.formSub',d.financial.formSub)+f('CTA button','financial.cta',d.financial.cta))
+  ].join('');
+}
+
+function buildEditor03(d) {
+  return [
+    sec('Navigation', f('Logo','nav.logo',d.nav.logo)+f('Reviews text','nav.reviews',d.nav.reviews)+f('CTA button','nav.cta',d.nav.cta)),
+    sec('Hero', f('Eyebrow','hero.eyebrow',d.hero.eyebrow)+f('Headline','hero.h1',d.hero.h1,true)+f('Subheadline','hero.sub',d.hero.sub,true)+f('Feature 1 title','hero.features.0.title',d.hero.features[0].title)+f('Feature 1 body','hero.features.0.body',d.hero.features[0].body,true)+f('Feature 2 title','hero.features.1.title',d.hero.features[1].title)+f('Feature 2 body','hero.features.1.body',d.hero.features[1].body,true)+f('Feature 3 title','hero.features.2.title',d.hero.features[2].title)+f('Feature 3 body','hero.features.2.body',d.hero.features[2].body,true)+f('CTA 1','hero.cta1',d.hero.cta1)+f('CTA 2','hero.cta2',d.hero.cta2)+f('CTA note','hero.ctaNote',d.hero.ctaNote)),
+    sec('Client Outcomes', f('Quote 1','outcomes.0.quote',d.outcomes[0].quote,true)+f('Attr 1','outcomes.0.attr',d.outcomes[0].attr)+f('Quote 2','outcomes.1.quote',d.outcomes[1].quote,true)+f('Attr 2','outcomes.1.attr',d.outcomes[1].attr)+f('Quote 3','outcomes.2.quote',d.outcomes[2].quote,true)+f('Attr 3','outcomes.2.attr',d.outcomes[2].attr)),
+    sec('Financial / Form', f('Kicker','financial.kicker',d.financial.kicker)+f('Headline','financial.h2',d.financial.h2,true)+f('Subheadline','financial.sub',d.financial.sub,true)+f('Feature 1 title','financial.features.0.title',d.financial.features[0].title)+f('Feature 2 title','financial.features.1.title',d.financial.features[1].title)+f('Feature 3 title','financial.features.2.title',d.financial.features[2].title)+f('Form title','financial.formTitle',d.financial.formTitle)+f('Form subtitle','financial.formSub',d.financial.formSub)+f('CTA button','financial.cta',d.financial.cta)+f('Fine print','financial.note',d.financial.note))
+  ].join('');
+}
+
+function buildEditor04(d) {
+  return [
+    sec('Navigation', f('Logo','nav.logo',d.nav.logo)+f('Tagline','nav.tagline',d.nav.tagline)+f('CTA button','nav.cta',d.nav.cta)),
+    sec('Hero', f('Eyebrow','hero.eyebrow',d.hero.eyebrow)+f('Headline','hero.h1',d.hero.h1,true)+f('Subheadline','hero.sub',d.hero.sub,true)+f('Primary CTA','hero.cta',d.hero.cta)+f('Secondary CTA','hero.cta2',d.hero.cta2)+f('CTA note','hero.ctaNote',d.hero.ctaNote)),
+    sec('Proof Stats', f('Stat 1','proof.s1',d.proof.s1)+f('Label 1','proof.l1',d.proof.l1)+f('Stat 2','proof.s2',d.proof.s2)+f('Label 2','proof.l2',d.proof.l2)+f('Stat 3','proof.s3',d.proof.s3)+f('Label 3','proof.l3',d.proof.l3)),
+    sec('Agents (6)', f('Agent 1 title','agents.0.title',d.agents[0].title)+f('Agent 1 body','agents.0.body',d.agents[0].body,true)+f('Agent 2 title','agents.1.title',d.agents[1].title)+f('Agent 2 body','agents.1.body',d.agents[1].body,true)+f('Agent 3 title','agents.2.title',d.agents[2].title)+f('Agent 3 body','agents.2.body',d.agents[2].body,true)+f('Agent 4 title','agents.3.title',d.agents[3].title)+f('Agent 4 body','agents.3.body',d.agents[3].body,true)+f('Agent 5 title','agents.4.title',d.agents[4].title)+f('Agent 5 body','agents.4.body',d.agents[4].body,true)+f('Agent 6 title','agents.5.title',d.agents[5].title)+f('Agent 6 body','agents.5.body',d.agents[5].body,true)),
+    sec('Honest Metrics', f('Kicker','honest.kicker',d.honest.kicker)+f('Headline','honest.h2',d.honest.h2)+f('Metric 1 title','honest.items.0.title',d.honest.items[0].title)+f('Metric 1 body','honest.items.0.body',d.honest.items[0].body,true)+f('Metric 2 title','honest.items.1.title',d.honest.items[1].title)+f('Metric 2 body','honest.items.1.body',d.honest.items[1].body,true)+f('Metric 3 title','honest.items.2.title',d.honest.items[2].title)+f('Metric 3 body','honest.items.2.body',d.honest.items[2].body,true)),
+    sec('Testimonials', f('Quote 1','testimonials.0.quote',d.testimonials[0].quote,true)+f('Name 1','testimonials.0.name',d.testimonials[0].name)+f('Role 1','testimonials.0.role',d.testimonials[0].role)+f('Quote 2','testimonials.1.quote',d.testimonials[1].quote,true)+f('Name 2','testimonials.1.name',d.testimonials[1].name)+f('Role 2','testimonials.1.role',d.testimonials[1].role)+f('Quote 3','testimonials.2.quote',d.testimonials[2].quote,true)+f('Name 3','testimonials.2.name',d.testimonials[2].name)+f('Role 3','testimonials.2.role',d.testimonials[2].role)),
+    sec('Bottom CTA', f('Headline','cta.h2',d.cta.h2,true)+f('Subheadline','cta.sub',d.cta.sub)+f('Button','cta.btn',d.cta.btn)+f('Fine print','cta.note',d.cta.note))
+  ].join('');
+}
+
+function buildEditor05(d) {
+  return [
+    sec('Navigation', f('Logo','nav.logo',d.nav.logo)+f('Tagline badge','nav.tagline',d.nav.tagline)+f('CTA button','nav.cta',d.nav.cta)),
+    sec('Hero', f('Eyebrow','hero.eyebrow',d.hero.eyebrow)+f('Headline','hero.h1',d.hero.h1,true)+f('Subheadline','hero.sub',d.hero.sub,true)+f('Primary CTA','hero.cta',d.hero.cta)+f('Secondary CTA','hero.cta2',d.hero.cta2)+f('Stat 1 (red)','hero.stat1',d.hero.stat1)+f('Stat 1 label','hero.stat1label',d.hero.stat1label)+f('Stat 2 (blue)','hero.stat2',d.hero.stat2)+f('Stat 2 label','hero.stat2label',d.hero.stat2label)+f('Stat 3 (green)','hero.stat3',d.hero.stat3)+f('Stat 3 label','hero.stat3label',d.hero.stat3label)),
+    sec('Broken Section', f('Kicker','broken.kicker',d.broken.kicker)+f('Headline','broken.h2',d.broken.h2,true)+f('Item 1 title','broken.items.0.title',d.broken.items[0].title)+f('Item 1 body','broken.items.0.body',d.broken.items[0].body,true)+f('Item 2 title','broken.items.1.title',d.broken.items[1].title)+f('Item 2 body','broken.items.1.body',d.broken.items[1].body,true)+f('Item 3 title','broken.items.2.title',d.broken.items[2].title)+f('Item 3 body','broken.items.2.body',d.broken.items[2].body,true)),
+    sec('Difference Section', f('Kicker','difference.kicker',d.difference.kicker)+f('Headline','difference.h2',d.difference.h2,true)+f('Feature 1 title','difference.features.0.title',d.difference.features[0].title)+f('Feature 1 body','difference.features.0.body',d.difference.features[0].body,true)+f('Feature 2 title','difference.features.1.title',d.difference.features[1].title)+f('Feature 2 body','difference.features.1.body',d.difference.features[1].body,true)+f('Feature 3 title','difference.features.2.title',d.difference.features[2].title)+f('Feature 3 body','difference.features.2.body',d.difference.features[2].body,true)+f('Feature 4 title','difference.features.3.title',d.difference.features[3].title)+f('Feature 4 body','difference.features.3.body',d.difference.features[3].body,true)),
+    sec('Testimonials', f('Quote 1','testimonials.0.quote',d.testimonials[0].quote,true)+f('Name 1','testimonials.0.name',d.testimonials[0].name)+f('Role 1','testimonials.0.role',d.testimonials[0].role)+f('Quote 2','testimonials.1.quote',d.testimonials[1].quote,true)+f('Name 2','testimonials.1.name',d.testimonials[1].name)+f('Role 2','testimonials.1.role',d.testimonials[1].role)),
+    sec('Form / CTA', f('Kicker','form.kicker',d.form.kicker)+f('Headline','form.h2',d.form.h2,true)+f('Subheadline','form.sub',d.form.sub,true)+f('CTA button','form.cta',d.form.cta)+f('Fine print','form.note',d.form.note))
+  ].join('');
+}
+
+function toggleSec(header) {
+  const body = header.nextElementSibling;
+  const open = body.classList.toggle('open');
+  header.querySelector('.editor-section-toggle').classList.toggle('open', open);
+}
+
+// ── Live editing ──
+function liveEdit(el) {
+  setNestedPath(DATA[currentLP], el.dataset.path, el.value);
+  renderCurrent();
+}
+function toggleEdit(el, path) {
+  el.classList.toggle('on');
+  setNestedPath(DATA[currentLP], path, el.classList.contains('on'));
+  renderCurrent();
+}
+function setNestedPath(obj, path, val) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const p = parts[i];
+    if (cur[p] === undefined || cur[p] === null) cur[p] = isNaN(parseInt(parts[i+1])) ? {} : [];
+    cur = cur[p];
+  }
+  cur[parts[parts.length - 1]] = val;
+}
+
+// ════════════════════════════════════════════════════
+// NOTES
+// ════════════════════════════════════════════════════
+const NOTES = [
+  { audience: 'Executives 45–65 displaced · workshop registration', strategy: 'Highest-volume driver. Leads with outcome-first headline. No outbound nav links. Real urgency bar with seat count. Two proof signals above the fold before the CTA. Pain section agitates before the solution appears.', checks: ['Urgency bar drives immediate action', 'Dual proof stats in hero (5.0★ + 3×)', 'Pain section before testimonials', 'Single registration CTA throughout', 'No external nav links = no exits'], tags: ['Workshop CTA', 'Dark theme', 'Short funnel'] },
+  { audience: 'Cold traffic · strategy call', strategy: '"You didn\'t lose your job. The system failed you." hits the emotional core before any solution. The vs-table makes differentiation scannable. The financial dimension section separates FST from every other career firm.', checks: ['Emotional headline lands empathy first', 'Vs-table scannable above fold', 'Big quote establishes authority', 'Financial angle differentiates FST', 'Dropdown form qualifies intent'], tags: ['Strategy Call CTA', 'Dark theme', 'Medium funnel'] },
+  { audience: 'LinkedIn ad traffic · executive identity', strategy: 'Cream background (#f0ede8) — warmer, more personal. "Become the candidate they can\'t ignore" is aspirational not fear-based. Dual CTA captures both intent levels (workshop + strategy call).', checks: ['Aspirational not fear-based headline', 'Cream background feels premium', 'Feature list before outcome cards', 'Dual CTA captures both intent levels', 'Financial section as conversion fallback'], tags: ['Dual CTA', 'Light theme', 'Long funnel'] }
+,
+  { audience: 'Executives 45-65 · CareerIQ free signup', strategy: 'Platform page for CareerIQ. Dark hero builds credibility and shows the product is serious. Agent grid demonstrates depth — 33 agents signals this is not a generic tool. Honest metrics section differentiates from vanity-metric platforms. Pricing table drives free signup with Pro as the obvious upgrade.', checks: ['Dark hero anchors authority', 'Agent grid shows methodology depth', 'Honest metrics = trust signal', 'Pricing table drives free → Pro', 'Single email CTA at bottom'], tags: ['CareerIQ signup', 'Dark/light hybrid', 'Product page'] },
+  { audience: 'HR Directors, CHROs, VP People · demo request', strategy: 'B2B page. 1.7/5 vs 5.0/5 contrast is the killer proof point — lead with it in the hero stats. Broken section validates their frustration with legacy vendors before presenting FST as the alternative. Three tiers shows flexibility. Dropdown in form qualifies intent before the demo call.', checks: ['1.7 vs 5.0 stat creates immediate contrast', 'Broken section validates CHRO frustration', 'Tier structure shows enterprise flexibility', 'Form dropdown qualifies intent', 'No consumer language — all B2B framing'], tags: ['Enterprise demo', 'B2B', 'Dark theme'] }
+];
+
+const LP_URLS = ['firstsourceteam.com/workshop', 'firstsourceteam.com/displaced', 'firstsourceteam.com/executive', 'careeriq.app', 'firstsourceteam.com/employers'];
+
+function renderNotes(idx) {
+  const n = NOTES[idx];
+  document.getElementById('notes-body').innerHTML = `
+    <div class="strategy-block"><div class="strategy-label">Audience</div><div class="strategy-text">${n.audience}</div></div>
+    <div class="strategy-block"><div class="strategy-label">Strategy</div><div class="strategy-text">${n.strategy}</div></div>
+    <div class="strategy-block"><div class="strategy-label">Conversion checklist</div>${n.checks.map(c=>`<div class="check-item"><span class="check-icon">✓</span>${c}</div>`).join('')}</div>
+    <div class="strategy-block"><div class="strategy-label">Tags</div><div class="metric-pills">${n.tags.map(t=>`<span class="metric-pill">${t}</span>`).join('')}</div></div>`;
+}
+
+// ════════════════════════════════════════════════════
+// LP SELECTION & UTILS
+// ════════════════════════════════════════════════════
+function selectLP(idx, el) {
+  currentLP = idx;
+  document.querySelectorAll('.lp-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.getElementById('browser-url').textContent = LP_URLS[idx];
+  const builders = [buildEditor01, buildEditor02, buildEditor03, buildEditor04, buildEditor05];
+  document.getElementById('editor-sections').innerHTML = builders[idx](DATA[idx]);
+  renderCurrent();
+  renderNotes(idx);
+}
+
+function resetLP() {
+  DATA[currentLP] = JSON.parse(JSON.stringify(DEFAULT_DATA[currentLP]));
+  selectLP(currentLP, null);
+  toast('Reset to defaults');
+}
+
+function toggleDevice() {
+  mobileMode = !mobileMode;
+  const b = document.getElementById('browser-body');
+  const btn = event.currentTarget;
+  b.style.maxWidth = mobileMode ? '390px' : '';
+  b.style.margin = mobileMode ? '0 auto' : '';
+  b.style.borderLeft = mobileMode ? '1px solid #ccc' : '';
+  b.style.borderRight = mobileMode ? '1px solid #ccc' : '';
+  btn.textContent = mobileMode ? '🖥 Desktop' : '📱 Mobile';
+}
+
+function exportHTML() {
+  const fns = [r01, r02, r03];
+  const names = ['workshop', 'displaced', 'executive', 'careeriq', 'enterprise'];
+  const body = fns[currentLP](DATA[currentLP]);
+  const html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n<title>FirstSourceTeam</title>\n<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif}</style>\n</head>\n<body>\n${body}\n</body>\n</html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], {type:'text/html'}));
+  a.download = `fst-lp-${names[currentLP]}.html`;
+  a.click();
+  toast('Exported ✓', 'success');
+}
+
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Init
+selectLP(0, null);
+</script>
+</body>
+</html>
